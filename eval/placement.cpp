@@ -3,6 +3,7 @@
  * Author: davidwu
  */
 
+#include <cstdlib>
 #include "../core/global.h"
 #include "../board/bitmap.h"
 #include "../board/board.h"

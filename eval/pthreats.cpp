@@ -2,6 +2,7 @@
  * pthreats.cpp
  * Author: davidwu
  */
+#include <cmath>
 #include "../core/global.h"
 #include "../board/board.h"
 #include "../board/boardtreeconst.h"

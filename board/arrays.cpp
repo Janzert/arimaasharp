@@ -1,4 +1,5 @@
 
+#include <cstdlib>
 #include "../core/global.h"
 #include "../core/hash.h"
 #include "../core/rand.h"

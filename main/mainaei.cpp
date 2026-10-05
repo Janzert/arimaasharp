@@ -3,6 +3,7 @@
  * Author: davidwu
  */
 
+#include <cmath>
 #include <fstream>
 #include <ctime>
 #include <cstdlib>

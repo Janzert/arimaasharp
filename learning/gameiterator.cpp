@@ -4,6 +4,8 @@
  * Author: davidwu
  */
 
+#include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <algorithm>

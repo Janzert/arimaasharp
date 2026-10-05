@@ -3,6 +3,7 @@
  * Author: davidwu
  */
 
+#include <cmath>
 #include "../core/global.h"
 #include "../core/rand.h"
 #include "../board/board.h"

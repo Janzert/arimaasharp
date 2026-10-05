@@ -60,7 +60,7 @@ class PrefixStream : public std::ostream
 
   public:
   inline PrefixStream(std::string prefix, std::ostream &os)
-  :std::ostream(),buf(prefix,os.rdbuf())
+  :std::ostream(NULL),buf(prefix,os.rdbuf())
   {
     this->rdbuf(&buf);
   }

@@ -4,7 +4,7 @@
  * Author: davidwu
  */
 
-#include <boost/static_assert.hpp>
+#include <cmath>
 #include <algorithm>
 #include "../core/global.h"
 #include "../board/board.h"

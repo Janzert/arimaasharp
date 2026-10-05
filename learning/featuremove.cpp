@@ -4,6 +4,7 @@
  * Author: davidwu
  */
 
+#include <cmath>
 #include <algorithm>
 #include <set>
 #include "../core/global.h"

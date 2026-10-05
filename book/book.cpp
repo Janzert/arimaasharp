@@ -3,6 +3,8 @@
  * Author: davidwu
  */
 
+#include <cmath>
+#include <cstdlib>
 #include "../core/global.h"
 #include "../board/board.h"
 #include "../book/book.h"
@@ -12,11 +14,6 @@ static const double X_EXPAND[8] = {1.0,1.0,1.2,1.4,1.6,1.7,1.7,1.7};
 static const double Y_MAPPING[8] = {0.0,1.0,2.0,3.3,4.7,6.2,7.8,9.4};
 //Max dist for a single piece
 static const double MAX_DIST = 0.5*((Y_MAPPING[7]-Y_MAPPING[0]) + X_EXPAND[7]*7.0);
-
-static double abs(double x)
-{
-  return x >= 0 ? x : -x;
-}
 
 //Distance function for how "far" two locations are, treating advanced locations as further
 static double locDistance(pla_t pla, loc_t loc0, loc_t loc1)
