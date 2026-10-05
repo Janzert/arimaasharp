@@ -516,8 +516,8 @@ int MainFuncs::aei(int argc, const char* const *argv)
         else
           logMessage("Ignore tc set to false");
       }
-      //Dev-only option, print out inter-search details like mainposmoves when doing a search
-      else if(Init::ARIMAA_DEV && *(event.inputSetOptionKey) == "verbose" && Global::tryStringToBool(*(event.inputSetOptionValue),bit))
+      //Print out inter-search details like mainposmoves when doing a search
+      else if(*(event.inputSetOptionKey) == "verbose" && Global::tryStringToBool(*(event.inputSetOptionValue),bit))
       {
         verbose = bit;
         if(verbose)
