@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+      - name: Configure
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = Windows ]; then
+            gen=(-G Ninja -DCMAKE_CXX_COMPILER=clang-cl)
+          fi
+          cmake -S . -B build "${gen[@]}"
+          cmake -S . -B build-dev "${gen[@]}" -DSHARP_DEV=ON
+      - name: Build
+        run: |
+          cmake --build build --parallel
+          cmake --build build-dev --parallel
+      - name: Self-tests
+        shell: bash
+        run: ./build-dev/sharp runBasicTests | tee tests.txt && grep -q 'Testing complete!' tests.txt
+      - name: AEI smoke test
+        shell: bash
+        run: |
+          printf 'aei\nisready\nnewgame\ngo\nquit\n' | ./build/sharp aei | tee aei.txt
+          grep -q '^bestmove ' aei.txt
