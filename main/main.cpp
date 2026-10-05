@@ -23,8 +23,11 @@ static int callMain(int argc, const char* const *argv);
 
 int main(int argc, char* argv[])
 {
-  //bool isDev = true;
+#ifdef SHARP_DEV
+  bool isDev = true;
+#else
   bool isDev = false;
+#endif
 
   Init::init(isDev);
 

@@ -44,3 +44,5 @@ traineval.sh
 writegitrevision.sh
 .externalToolBuilders
 program/gitrevision.h
+# Builds
+build/
