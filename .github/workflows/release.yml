@@ -1,0 +1,177 @@
+name: Release
+
+# A tag like v2026.10.0 builds Sharp for each platform, packages it with
+# its license, and publishes a GitHub release with the archives and an
+# engine manifest (engine.json, AEI's ENGINE_MANIFEST.md) giving each
+# archive's digest. Controllers find the newest release through
+# releases/latest/download/engine.json.
+#
+# Only the build and packaging differ from CI: the Windows build uses the
+# static C runtime (no Visual C++ redistributable needed) and the Linux
+# build links libstdc++ statically, on the oldest supported Ubuntu.
+#
+# Run by hand (workflow_dispatch), it builds, packages and writes the
+# manifest as artifacts, without publishing anything.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { os: ubuntu-22.04, platform: linux-x86_64, archive: tar.gz }
+          - { os: windows-latest, platform: windows-x86_64, archive: zip }
+          - { os: macos-latest, platform: macos-aarch64, archive: tar.gz }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+
+      - name: Configure
+        run: |
+          flags=()
+          if [ "$RUNNER_OS" = Windows ]; then
+            flags=(-G Ninja -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded)
+          elif [ "$RUNNER_OS" = Linux ]; then
+            flags=("-DCMAKE_EXE_LINKER_FLAGS=-static-libstdc++ -static-libgcc")
+          fi
+          cmake -S . -B build "${flags[@]}"
+          cmake -S . -B build-dev "${flags[@]}" -DSHARP_DEV=ON
+
+      - name: Build
+        run: |
+          cmake --build build --parallel
+          cmake --build build-dev --parallel
+
+      - name: Self-tests
+        run: ./build-dev/sharp runBasicTests | tee tests.txt && grep -q 'Testing complete!' tests.txt
+
+      - name: AEI smoke test
+        run: |
+          printf 'aei\nisready\nnewgame\ngo\nquit\n' | ./build/sharp aei | tee aei.txt
+          grep -q '^bestmove ' aei.txt
+
+      - name: Package
+        run: |
+          exe=sharp; [ "$RUNNER_OS" = Windows ] && exe=sharp.exe
+          mkdir sharp
+          cp "build/$exe" LICENSE README.md sharp/
+          name="sharp-${{ matrix.platform }}.${{ matrix.archive }}"
+          if [ "${{ matrix.archive }}" = zip ]; then
+            7z a -tzip "$name" sharp >/dev/null
+          else
+            tar czf "$name" sharp
+          fi
+          echo "PACKAGE=$name" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: package-${{ matrix.platform }}
+          path: ${{ env.PACKAGE }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: package-*
+          merge-multiple: true
+          path: dist
+
+      - name: Write the engine manifest
+        env:
+          REPO: ${{ github.repository }}
+          REF_NAME: ${{ github.ref_name }}
+          IS_TAG: ${{ startsWith(github.ref, 'refs/tags/') }}
+        run: |
+          python3 - <<'EOF'
+          import hashlib, json, os, pathlib
+
+          repo = os.environ["REPO"]
+          is_tag = os.environ["IS_TAG"] == "true"
+          tag = os.environ["REF_NAME"] if is_tag else "v0.0.0-test"
+          version = tag.removeprefix("v")
+          dist = pathlib.Path("dist")
+          downloads = {}
+          for f in sorted(dist.iterdir()):
+              platform, _, archive = f.name.removeprefix("sharp-").partition(".")
+              exe = "sharp.exe" if platform.startswith("windows") else "sharp"
+              downloads[platform] = {
+                  "url": f"https://github.com/{repo}/releases/download/{tag}/{f.name}",
+                  "sha256": hashlib.sha256(f.read_bytes()).hexdigest(),
+                  "archive": archive,
+                  "program": f"sharp/{exe}",
+              }
+          manifest = {
+              "manifest_version": 1,
+              "id": f"github.com/{repo}",
+              "name": "Sharp",
+              "version": version,
+              "author": "David J Wu (lightvector)",
+              "description": "bot_Sharp, winner of the 2015 Arimaa Challenge. This build is a fork, not maintained or endorsed by its author.",
+              "homepage": f"https://github.com/{repo}",
+              "license": "BSD-3-Clause",
+              "update_url": f"https://github.com/{repo}/releases/latest/download/engine.json",
+              "args": ["aei"],
+              "downloads": downloads,
+              "options": [
+                  {"name": "threads", "type": "spin", "default": 1, "min": 1, "max": 32,
+                   "description": "Search threads."},
+                  {"name": "hash", "type": "spin", "min": 1,
+                   "description": "Hash table size in megabytes, rounded to a power of two; takes effect at the next search."},
+                  {"name": "verbose", "type": "check", "default": False,
+                   "description": "Log each finished iteration and new best move, with its principal variation."},
+                  {"name": "ignoretc", "type": "check", "default": False,
+                   "description": "Ignore the time control and search until stopped (or to the depth limit)."},
+              ],
+          }
+          (dist / "engine.json").write_text(json.dumps(manifest, indent=2) + "\n")
+          print((dist / "engine.json").read_text())
+          EOF
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-files
+          path: dist/
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||
+            gh release create "$TAG" -R "$GITHUB_REPOSITORY" --verify-tag --title "Sharp $TAG" \
+              --notes "Sharp ${TAG#v}. Install it from a controller that reads engine manifests (engine.json), or unpack the archive for your platform and run \`sharp aei\`."
+          gh release upload "$TAG" -R "$GITHUB_REPOSITORY" --clobber dist/*
+
+      - name: Check the published files against the manifest
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          python3 - <<'EOF'
+          import hashlib, json, os, urllib.request
+
+          base = f"https://github.com/{os.environ['REPO']}/releases/download/{os.environ['TAG']}"
+          manifest = json.load(urllib.request.urlopen(f"{base}/engine.json"))
+          for platform, d in manifest["downloads"].items():
+              digest = hashlib.sha256(urllib.request.urlopen(d["url"]).read()).hexdigest()
+              assert digest == d["sha256"], f"{platform}: {digest} != {d['sha256']}"
+              print(f"{platform}: ok")
+          EOF
