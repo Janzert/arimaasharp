@@ -20,7 +20,9 @@ On Windows, build from a Visual Studio developer prompt with clang-cl
 
 Run the engine as `build/sharp aei`. Besides the usual AEI options,
 `setoption name verbose value true` logs each search iteration and new
-best move.
+best move. A `stop` sent right after `go`, before the search has found a
+move, is answered with a move from a quick one-turn search; upstream sent
+no `bestmove` then.
 
 `-DSHARP_DEV=ON` builds the developer command line instead, which takes a
 command first. `build/sharp runBasicTests` runs the self-tests.

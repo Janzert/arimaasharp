@@ -87,6 +87,7 @@ class AsyncBot
 
   //INTERNAL USE ONLY
   void runSearchThread();
+  move_t quickMove(const Board& b, const BoardHistory& hist);
   void stopInternal(std::unique_lock<std::mutex>& lock);
 };
 

@@ -104,14 +104,15 @@ void AsyncBot::runSearchThread()
     if(killed)
       break;
 
-    //Already interrupted, just report the result and skip starting the search
+    //Already interrupted, skip the search and report a quick move instead
     if(interrupted)
     {
-      //Not pondering - report a null search result
       if(currentSearchId != -1)
       {
         DEBUGASSERT(searchDoneFunc != NULL);
-        (*searchDoneFunc)(ERRMOVE,currentSearchId,SearchStats());
+        searcher.params = params;
+        searcher.resizeHashIfNeeded();
+        (*searchDoneFunc)(quickMove(searchBoard,searchHist),currentSearchId,SearchStats());
       }
       continue;
     }
@@ -236,6 +237,14 @@ void AsyncBot::runSearchThread()
         //Regular or converted search, just go and return the best move
         DEBUGASSERT(searchDoneFunc != NULL);
         DEBUGASSERT(currentPonderMove != ERRMOVE || !shouldPonder); //Shouldn't ever get here from an opp's turn ponder
+        //Interrupted before it found a move
+        if(bestMove == ERRMOVE)
+        {
+          Board bb(b);
+          if(shouldPonder)
+            bb.makeMoveLegalNoUndo(currentPonderMove);
+          bestMove = quickMove(bb,hist);
+        }
         (*searchDoneFunc)(bestMove,currentSearchId,bestStats);
         break;
       }
@@ -266,6 +275,18 @@ void AsyncBot::runSearchThread()
 
   } //End thread search loop
 
+}
+
+//A move for a search interrupted before it found one (a stop right after go):
+//a fixed one-turn search, which takes milliseconds. ERRMOVE only if there's
+//no move to make or this is interrupted too.
+move_t AsyncBot::quickMove(const Board& b, const BoardHistory& hist)
+{
+  internalSearchId++;
+  searcher.setSearchId(internalSearchId);
+  searcher.setTimeControl(TimeControl());
+  searcher.searchID(b,hist,4,SearchParams::AUTO_TIME);
+  return searcher.getMove();
 }
 
 void AsyncBot::stopInternal(std::unique_lock<std::mutex>& lock)
