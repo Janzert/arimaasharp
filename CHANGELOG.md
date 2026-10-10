@@ -5,7 +5,7 @@ Changes in this fork of
 Releases are tagged with their date (`v2026.10.6`). The fork starts from
 upstream's 2021 public release of the source (commit `5f336a7`).
 
-## Unreleased
+## 2026.10.10 (2026-10-10)
 
 - **Fixed:** a `stop` sent right after `go`, before the search thread has
   started or found its root moves, is answered with a move from a quick
