@@ -42,7 +42,7 @@
       "default": 0,
       "min": 0,
       "max": 96,
-      "description": "Stop searching at this many steps (at least 4). The time control still applies unless ignoretc is set. 0 for no fixed depth."
+      "description": "Stop searching at this many steps (at least 4). Up to 8, the best few moves are also searched one step deeper. The time control still applies unless ignoretc is set. 0 for no fixed depth."
     }
   ]
 }
