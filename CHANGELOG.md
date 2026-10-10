@@ -5,6 +5,11 @@ Changes in this fork of
 Releases are tagged with their date (`v2026.10.6`). The fork starts from
 upstream's 2021 public release of the source (commit `5f336a7`).
 
+## Unreleased
+
+- **Fixed:** `setposition` honors the side to move. Upstream always
+  searched for gold, so a position with silver to move got a gold move.
+
 ## 2026.10.10 (2026-10-10)
 
 - **Fixed:** a `stop` sent right after `go`, before the search thread has

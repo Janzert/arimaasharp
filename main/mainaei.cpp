@@ -428,6 +428,8 @@ int MainFuncs::aei(int argc, const char* const *argv)
         break;
       }
       b = Board::read(*(event.inputSetPositionBoard));
+      b.setPlaStep(event.inputSetPositionSide,0);
+      b.refreshStartHash();
       hist.reset(b);
       params.setAvoidEarlyTrade(false);
       params.setAvoidEarlyBlockade(false);
