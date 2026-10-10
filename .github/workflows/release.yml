@@ -6,6 +6,10 @@ name: Release
 # archive's digest. Controllers find the newest release through
 # releases/latest/download/engine.json.
 #
+# The manifest starts from engine.json in the repo (name, options and so
+# on, version "dev", no downloads), which also serves a developer's own
+# build; this fills in the release's version and downloads.
+#
 # Versions are the release date, vYEAR.MONTH.DAY without zero padding
 # (v2026.10.6), so they read like the championship bots' names
 # (bot_OpFor2010) and compare as dotted numbers. A second release on
@@ -91,6 +95,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           pattern: package-*
@@ -121,29 +126,11 @@ jobs:
                   "archive": archive,
                   "program": f"sharp/{exe}",
               }
-          manifest = {
-              "manifest_version": 1,
-              "id": f"github.com/{repo}",
-              "name": "Sharp",
-              "version": version,
-              "author": "David J Wu (lightvector)",
-              "description": "bot_Sharp, winner of the 2015 Arimaa Challenge. This build is a fork, not maintained or endorsed by its author.",
-              "homepage": f"https://github.com/{repo}",
-              "license": "BSD-3-Clause",
-              "update_url": f"https://github.com/{repo}/releases/latest/download/engine.json",
-              "args": ["aei"],
-              "downloads": downloads,
-              "options": [
-                  {"name": "threads", "type": "spin", "default": 1, "min": 1, "max": 32,
-                   "description": "Search threads."},
-                  {"name": "hash", "type": "spin", "min": 1,
-                   "description": "Hash table size in megabytes, rounded to a power of two; takes effect at the next search."},
-                  {"name": "verbose", "type": "check", "default": False,
-                   "description": "Log each finished iteration and new best move, with its principal variation."},
-                  {"name": "ignoretc", "type": "check", "default": False,
-                   "description": "Ignore the time control and search until stopped (or to the depth limit)."},
-              ],
-          }
+          # engine.json in the repo has everything but the release's version
+          # and downloads.
+          manifest = json.loads(pathlib.Path("engine.json").read_text())
+          manifest["version"] = version
+          manifest["downloads"] = downloads
           (dist / "engine.json").write_text(json.dumps(manifest, indent=2) + "\n")
           print((dist / "engine.json").read_text())
           EOF

@@ -1,0 +1,48 @@
+{
+  "manifest_version": 1,
+  "id": "github.com/Janzert/arimaasharp",
+  "name": "Sharp",
+  "version": "dev",
+  "author": "David J Wu (lightvector)",
+  "description": "bot_Sharp, winner of the 2015 Arimaa Challenge. This build is a fork, not maintained or endorsed by its author.",
+  "homepage": "https://github.com/Janzert/arimaasharp",
+  "license": "BSD-3-Clause",
+  "update_url": "https://github.com/Janzert/arimaasharp/releases/latest/download/engine.json",
+  "args": ["aei"],
+  "options": [
+    {
+      "name": "threads",
+      "type": "spin",
+      "default": 1,
+      "min": 1,
+      "max": 32,
+      "description": "Search threads."
+    },
+    {
+      "name": "hash",
+      "type": "spin",
+      "min": 1,
+      "description": "Hash table size in megabytes, rounded to a power of two; takes effect at the next search."
+    },
+    {
+      "name": "verbose",
+      "type": "check",
+      "default": false,
+      "description": "Log each finished iteration and new best move, with its principal variation."
+    },
+    {
+      "name": "ignoretc",
+      "type": "check",
+      "default": false,
+      "description": "Ignore the time control and search until stopped (or to the depth limit)."
+    },
+    {
+      "name": "depth",
+      "type": "spin",
+      "default": 0,
+      "min": 0,
+      "max": 96,
+      "description": "Stop searching at this many steps (at least 4). The time control still applies unless ignoretc is set. 0 for no fixed depth."
+    }
+  ]
+}
